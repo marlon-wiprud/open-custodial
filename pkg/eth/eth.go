@@ -2,9 +2,11 @@ package eth
 
 import (
 	"fmt"
+	"math/big"
 	"open_custodial/pkg/hsm"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -58,4 +60,48 @@ func CreateAddress(h hsm.HSM, name string) (addr common.Address, err error) {
 	}
 
 	return crypto.PubkeyToAddress(pub), nil
+}
+
+func SignTransaction(h hsm.HSM, tx *types.Transaction, label string, chainID *big.Int) (*types.Transaction, error) {
+	sess, err := h.NewSlotSession(label)
+	if err != nil {
+		return nil, err
+	}
+
+	defer h.EndSession(sess)
+
+	pubHandle, done, err := h.PublicKeyHandle(*sess)
+	if err != nil {
+		return nil, err
+	}
+
+	done()
+
+	pubKey, err := h.GetPublicKey(*sess, pubHandle)
+	if err != nil {
+		return nil, err
+	}
+
+	privHandle, done, err := h.PrivateKeyHandle(*sess)
+	if err != nil {
+		return nil, err
+	}
+
+	done()
+
+	pubKeyBytes := crypto.FromECDSAPub(&pubKey)
+	signer := types.NewLondonSigner(chainID)
+	message := signer.Hash(tx).Bytes()
+
+	signature, err := h.SignECDSA_secp256k1(message, *sess, privHandle)
+	if err != nil {
+		return nil, err
+	}
+
+	verifiedSig, err := hsm.VerifySignature(message, signature, pubKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return tx.WithSignature(signer, verifiedSig)
 }
