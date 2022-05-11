@@ -57,7 +57,7 @@ func (h *hsm) SlotExists(name string) (bool, error) {
 	return err == nil, err
 }
 
-func (h *hsm) PublicKeyHandle(session pkcs11.SessionHandle) (pkcs11.ObjectHandle, func(), error) {
+func (h *hsm) PublicKeyHandle(session pkcs11.SessionHandle) (pkcs11.ObjectHandle, error) {
 
 	attr := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_ECDSA),
@@ -67,7 +67,7 @@ func (h *hsm) PublicKeyHandle(session pkcs11.SessionHandle) (pkcs11.ObjectHandle
 	return h.findWithAttributes(session, attr)
 }
 
-func (h *hsm) PrivateKeyHandle(session pkcs11.SessionHandle) (pkcs11.ObjectHandle, func(), error) {
+func (h *hsm) PrivateKeyHandle(session pkcs11.SessionHandle) (pkcs11.ObjectHandle, error) {
 
 	attr := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKK_ECDSA),
@@ -75,6 +75,24 @@ func (h *hsm) PrivateKeyHandle(session pkcs11.SessionHandle) (pkcs11.ObjectHandl
 	}
 
 	return h.findWithAttributes(session, attr)
+}
+
+func (h *hsm) findWithAttributes(session pkcs11.SessionHandle, attr []*pkcs11.Attribute) (pkcs11.ObjectHandle, error) {
+	err := h.ctx.FindObjectsInit(session, attr)
+	if err != nil {
+		return pkcs11.ObjectHandle(1), err
+	}
+
+	obj, _, err := h.ctx.FindObjects(session, 1)
+	if err != nil {
+		return pkcs11.ObjectHandle(1), err
+	}
+
+	if len(obj) == 0 {
+		return pkcs11.ObjectHandle(1), errors.New("no objects found")
+	}
+
+	return obj[0], nil
 }
 
 func (h *hsm) GetPublicKey(session pkcs11.SessionHandle, pubKeyHandle pkcs11.ObjectHandle) (ecdsa.PublicKey, error) {

@@ -20,13 +20,11 @@ func GetAddress(h hsm.HSM, name string) (addr common.Address, err error) {
 
 	defer h.EndSession(sess)
 
-	pubHandle, done, err := h.PublicKeyHandle(*sess)
+	pubHandle, err := h.PublicKeyHandle(*sess)
 	if err != nil {
 		fmt.Println("get_addr: failed to get public key handle", err)
 		return addr, err
 	}
-
-	done()
 
 	pub, err := h.GetPublicKey(*sess, pubHandle)
 	if err != nil {
@@ -70,24 +68,20 @@ func SignTransaction(h hsm.HSM, tx *types.Transaction, label string, chainID *bi
 
 	defer h.EndSession(sess)
 
-	pubHandle, done, err := h.PublicKeyHandle(*sess)
+	pubHandle, err := h.PublicKeyHandle(*sess)
 	if err != nil {
 		return nil, err
 	}
-
-	done()
 
 	pubKey, err := h.GetPublicKey(*sess, pubHandle)
 	if err != nil {
 		return nil, err
 	}
 
-	privHandle, done, err := h.PrivateKeyHandle(*sess)
+	privHandle, err := h.PrivateKeyHandle(*sess)
 	if err != nil {
 		return nil, err
 	}
-
-	done()
 
 	pubKeyBytes := crypto.FromECDSAPub(&pubKey)
 	signer := types.NewLondonSigner(chainID)

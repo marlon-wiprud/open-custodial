@@ -8,7 +8,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"github.com/miekg/pkcs11"
 )
 
 // asn1 object identiefier based on
@@ -46,26 +45,4 @@ func unmarshalEcParams(b []byte) (elliptic.Curve, error) {
 	}
 
 	return nil, errors.New("ec params do not match secp256k1")
-}
-
-func (h *hsm) findWithAttributes(session pkcs11.SessionHandle, attr []*pkcs11.Attribute) (pkcs11.ObjectHandle, func(), error) {
-	finisher := func() {
-		h.ctx.FindObjectsFinal(session)
-	}
-
-	err := h.ctx.FindObjectsInit(session, attr)
-	if err != nil {
-		return pkcs11.ObjectHandle(1), finisher, err
-	}
-
-	obj, _, err := h.ctx.FindObjects(session, 1)
-	if err != nil {
-		return pkcs11.ObjectHandle(1), finisher, err
-	}
-
-	if len(obj) == 0 {
-		return pkcs11.ObjectHandle(1), finisher, errors.New("no objects found")
-	}
-
-	return obj[0], finisher, nil
 }
