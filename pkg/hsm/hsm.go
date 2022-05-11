@@ -26,9 +26,10 @@ type hsm struct {
 	ctx        *pkcs11.Ctx
 	cuUsername string
 	cuPassword string
+	soPassword string
 }
 
-func NewHSM(libPath, cuUsername, cuPassword string) (HSM, error) {
+func NewHSM(libPath, cuUsername, cuPassword, soPassword string) (HSM, error) {
 	p := pkcs11.New(libPath)
 	if p == nil {
 		return nil, fmt.Errorf("unable to initialize pkcs11 module with path %s", libPath)
@@ -38,7 +39,7 @@ func NewHSM(libPath, cuUsername, cuPassword string) (HSM, error) {
 		return nil, err
 	}
 
-	return &hsm{p, cuUsername, cuPassword}, nil
+	return &hsm{p, cuUsername, cuPassword, soPassword}, nil
 }
 
 func (h *hsm) NewSlot(name string) (uint, error) {
@@ -47,13 +48,53 @@ func (h *hsm) NewSlot(name string) (uint, error) {
 		return 0, err
 	}
 
-	slotID := uint(len(slots))
+	_, err = findSlotByName(h.ctx, slots, name)
+	if err == nil {
+		return 0, errors.New("slots already exists")
+	}
 
-	if err := h.ctx.InitToken(slotID, h.buildPin(), name); err != nil {
+	slotID := uint(len(slots)) - 1
+
+	fmt.Println("new_slot: using slotID", slotID, slots[0])
+
+	if err := h.ctx.InitToken(slotID, h.buildSOPin(), name); err != nil {
+		fmt.Println("new_slot: failed to init token ", err)
+		return 0, err
+	}
+
+	sess, err := h.ctx.OpenSession(slotID, pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
+	if err != nil {
+		fmt.Println("new_slot: failed to open session ", err)
+		return 0, err
+	}
+
+	defer h.EndSession(&sess)
+
+	if err := h.ctx.Login(sess, pkcs11.CKU_SO, h.buildSOPin()); err != nil {
+		fmt.Println("new_slot: failed to login ", err)
+		return 0, err
+	}
+
+	if err := h.ctx.InitPIN(sess, h.buildPin()); err != nil {
+		fmt.Println("new_slot: failed to init pin ", err)
 		return 0, err
 	}
 
 	return slotID, nil
+}
+
+func (h *hsm) SlotExists(name string) (bool, error) {
+	slots, err := h.ctx.GetSlotList(true)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = findSlotByName(h.ctx, slots, name)
+	return err == nil, err
+}
+
+func (h *hsm) buildSOPin() string {
+	return fmt.Sprintf("%s:%s", h.cuUsername, h.cuPassword)
 }
 
 func (h *hsm) buildPin() string {
@@ -77,7 +118,7 @@ func (h *hsm) NewSlotSession(name string) (*pkcs11.SessionHandle, error) {
 		return nil, err
 	}
 
-	err = h.ctx.Login(sess, pkcs11.CKU_USER, h.cuUsername)
+	err = h.ctx.Login(sess, pkcs11.CKU_USER, h.buildPin())
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +148,8 @@ func findSlotByName(ctx *pkcs11.Ctx, slots []uint, name string) (uint, error) {
 		if err != nil {
 			return 0, err
 		}
+
+		fmt.Println("slot name: ", info.Label)
 
 		if info.Label == name {
 			return s, nil
