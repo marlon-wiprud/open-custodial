@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"open_custodial/pkg/hsm"
@@ -120,4 +121,14 @@ func SignTransaction(h hsm.HSM, tx *types.Transaction, label string, chainID *bi
 	}
 
 	return tx.WithSignature(signer, verifiedSig)
+}
+
+func RawTransaction(tx *types.Transaction) ([]byte, error) {
+	var b bytes.Buffer
+
+	if err := tx.EncodeRLP(&b); err != nil {
+		return nil, fmt.Errorf("unable to encode signed transaction %v", err)
+	}
+
+	return b.Bytes(), nil
 }

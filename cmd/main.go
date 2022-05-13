@@ -3,6 +3,7 @@ package main
 import (
 	eth_http "open_custodial/module/eth/http"
 	eth_svc "open_custodial/module/eth/service"
+	validator_svc "open_custodial/module/validator/service"
 	"open_custodial/pkg/config"
 	"open_custodial/pkg/hsm"
 
@@ -16,8 +17,9 @@ func main() {
 		panic(err)
 	}
 
-	svc := eth_svc.NewETHService(h)
-	handler := eth_http.NewHandler(svc)
+	validatorSvc := validator_svc.NewValidatorService()
+	ethSvc := eth_svc.NewETHService(h, validatorSvc)
+	handler := eth_http.NewHandler(ethSvc)
 
 	g := gin.Default()
 	v1 := g.Group("/v1")

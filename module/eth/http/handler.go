@@ -6,6 +6,7 @@ import (
 	"open_custodial/pkg/_err"
 	"open_custodial/pkg/_http"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,6 +26,7 @@ func (h *Handler) Setup(r *gin.RouterGroup) {
 	r.POST("/address", h.createAddress)
 	r.GET("/address/:label", h.getAddress)
 	r.GET("/slotaddress/:slotID", h.getSlotAddress)
+	r.POST("/sign", h.signTransaction)
 }
 
 func newCreateAddressForm(c *gin.Context) (f createAddressForm, err error) {
@@ -82,4 +84,28 @@ func (h *Handler) getSlotAddress(c *gin.Context) {
 
 	c.JSON(http.StatusOK, addr)
 
+}
+
+func (h *Handler) signTransaction(c *gin.Context) {
+	f, err := newSignTxForm(c)
+	if err != nil {
+		_http.ErrorResponse(c, _err.NewBadFormErr(err), http.StatusBadRequest)
+		return
+	}
+
+	tx := types.NewTransaction(f.Nonce, f.To, f.Amount, f.GasLimit, f.GasPrice, f.Data)
+
+	tx, err = h.service.SignTransaction(tx, f.ChainID, f.Label)
+	if err != nil {
+		_http.ErrorResponse(c, _err.NewError(err, "unable to sign transaction"), http.StatusBadRequest)
+		return
+	}
+
+	resp, err := NewSignTxResp(tx)
+	if err != nil {
+		_http.ErrorResponse(c, _err.NewError(err, "unable to decode raw transaction"), http.StatusBadRequest)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
