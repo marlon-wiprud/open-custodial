@@ -8,6 +8,15 @@ import (
 	"github.com/miekg/pkcs11"
 )
 
+func (h *hsm) GetSlotID(label string) (uint, error) {
+	slotID, ok := h.slotIndex.Get(label)
+	if !ok {
+		return 0, errors.New("unable to find slot with label")
+	}
+
+	return slotID, nil
+}
+
 func (h *hsm) NewSlot(name string) (uint, error) {
 	slots, err := h.ctx.GetSlotList(true)
 	if err != nil {
@@ -43,6 +52,8 @@ func (h *hsm) NewSlot(name string) (uint, error) {
 		fmt.Println("new_slot: failed to init pin ", err)
 		return 0, err
 	}
+
+	h.slotIndex.Set(name, slotID)
 
 	return slotID, nil
 }
@@ -163,10 +174,31 @@ func findSlotByName(ctx *pkcs11.Ctx, slots []uint, name string) (uint, error) {
 			return 0, err
 		}
 
+		fmt.Println("checking slot: ", s, info.Label, info.SerialNumber)
+
 		if info.Label == name {
 			return s, nil
 		}
 	}
 
 	return 0, fmt.Errorf("unable to find slots with name %s", name)
+}
+
+func (h *hsm) buildSlotIndex() error {
+
+	slots, err := h.ctx.GetSlotList(true)
+	if err != nil {
+		return err
+	}
+
+	for _, s := range slots {
+		info, err := h.ctx.GetTokenInfo(s)
+		if err != nil {
+			return err
+		}
+
+		h.slotIndex.Set(info.Label, s)
+	}
+
+	return nil
 }

@@ -28,7 +28,7 @@ func (s *HSMSuite) SetupSuite() {
 	err := p.Initialize()
 	s.NoError(err)
 
-	s.hsm = &hsm{p, c.CU_USERNAME, c.CU_PASSWORD, c.SO_PASSWORD}
+	s.hsm = &hsm{p, c.CU_USERNAME, c.CU_PASSWORD, c.SO_PASSWORD, nil}
 }
 
 func (s *HSMSuite) TestNewSlot() {

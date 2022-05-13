@@ -3,6 +3,7 @@ package hsm
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"sync"
 
 	"github.com/miekg/pkcs11"
 )
@@ -16,6 +17,8 @@ type HSM interface {
 	GenerateKeyECDSA_secp256k1(session pkcs11.SessionHandle) (pkcs11.ObjectHandle, pkcs11.ObjectHandle, error)
 	SignECDSA_secp256k1(msg []byte, sess pkcs11.SessionHandle, privKey pkcs11.ObjectHandle) ([]byte, error)
 	NewSlot(name string) (uint, error)
+	NewSession(slotID uint) (pkcs11.SessionHandle, error)
+	GetSlotID(label string) (uint, error)
 }
 
 type hsm struct {
@@ -23,6 +26,7 @@ type hsm struct {
 	cuUsername string
 	cuPassword string
 	soPassword string
+	slotIndex  *slotIndex
 }
 
 func NewHSM(libPath, cuUsername, cuPassword, soPassword string) (HSM, error) {
@@ -35,5 +39,28 @@ func NewHSM(libPath, cuUsername, cuPassword, soPassword string) (HSM, error) {
 		return nil, err
 	}
 
-	return &hsm{p, cuUsername, cuPassword, soPassword}, nil
+	slotIdx := &slotIndex{labelSlotIdx: make(map[string]uint)}
+	h := &hsm{p, cuUsername, cuPassword, soPassword, slotIdx}
+
+	if err := h.buildSlotIndex(); err != nil {
+		return nil, err
+	}
+
+	return h, nil
+}
+
+type slotIndex struct {
+	mu           sync.Mutex
+	labelSlotIdx map[string]uint
+}
+
+func (s *slotIndex) Set(label string, slotID uint) {
+	s.mu.Lock()
+	s.labelSlotIdx[label] = slotID
+	s.mu.Unlock()
+}
+
+func (s *slotIndex) Get(label string) (uint, bool) {
+	slotID, ok := s.labelSlotIdx[label]
+	return slotID, ok
 }

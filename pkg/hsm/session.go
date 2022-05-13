@@ -6,18 +6,17 @@ import (
 	"github.com/miekg/pkcs11"
 )
 
+func (h *hsm) NewSession(slotID uint) (pkcs11.SessionHandle, error) {
+	return newSession(h.ctx, slotID)
+}
+
 func newSession(ctx *pkcs11.Ctx, slotID uint) (pkcs11.SessionHandle, error) {
 	// TODO should session params come from function args?
 	return ctx.OpenSession(slotID, pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
 }
 
 func (h *hsm) NewSlotSession(name string) (*pkcs11.SessionHandle, error) {
-	slots, err := h.ctx.GetSlotList(true)
-	if err != nil {
-		return nil, err
-	}
-
-	slot, err := findSlotByName(h.ctx, slots, name)
+	slot, err := h.GetSlotID(name)
 	if err != nil {
 		return nil, err
 	}

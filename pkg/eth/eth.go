@@ -10,6 +10,28 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+func GetSlotAddress(h hsm.HSM, slotID uint) (addr common.Address, err error) {
+	sess, err := h.NewSession(slotID)
+	if err != nil {
+		return addr, err
+	}
+
+	defer h.EndSession(&sess)
+
+	pubHandle, err := h.PublicKeyHandle(sess)
+	if err != nil {
+		fmt.Println("get_addr: failed to get public key handle", err)
+		return addr, err
+	}
+
+	pub, err := h.GetPublicKey(sess, pubHandle)
+	if err != nil {
+		return addr, err
+	}
+
+	return crypto.PubkeyToAddress(pub), nil
+}
+
 func GetAddress(h hsm.HSM, name string) (addr common.Address, err error) {
 
 	sess, err := h.NewSlotSession(name)
