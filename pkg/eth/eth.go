@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/miekg/pkcs11"
 )
 
 func GetSlotAddress(h hsm.HSM, slotID uint) (addr common.Address, err error) {
@@ -84,6 +85,9 @@ func CreateAddress(h hsm.HSM, name string) (addr common.Address, err error) {
 }
 
 func SignTransaction(h hsm.HSM, tx *types.Transaction, label string, chainID *big.Int) (*types.Transaction, error) {
+	signer := types.NewLondonSigner(chainID)
+	message := signer.Hash(tx).Bytes()
+
 	sess, err := h.NewSlotSession(label)
 	if err != nil {
 		return nil, err
@@ -91,24 +95,10 @@ func SignTransaction(h hsm.HSM, tx *types.Transaction, label string, chainID *bi
 
 	defer h.EndSession(sess)
 
-	pubHandle, err := h.PublicKeyHandle(*sess)
+	pubKeyBytes, privHandle, err := getSigningKeys(h, sess, label)
 	if err != nil {
 		return nil, err
 	}
-
-	pubKey, err := h.GetPublicKey(*sess, pubHandle)
-	if err != nil {
-		return nil, err
-	}
-
-	privHandle, err := h.PrivateKeyHandle(*sess)
-	if err != nil {
-		return nil, err
-	}
-
-	pubKeyBytes := crypto.FromECDSAPub(&pubKey)
-	signer := types.NewLondonSigner(chainID)
-	message := signer.Hash(tx).Bytes()
 
 	signature, err := h.SignECDSA_secp256k1(message, *sess, privHandle)
 	if err != nil {
@@ -121,6 +111,33 @@ func SignTransaction(h hsm.HSM, tx *types.Transaction, label string, chainID *bi
 	}
 
 	return tx.WithSignature(signer, verifiedSig)
+}
+
+func getSigningKeys(h hsm.HSM, sess *pkcs11.SessionHandle, label string) (b []byte, privKey pkcs11.ObjectHandle, err error) {
+	pubHandle, err := h.PublicKeyHandle(*sess)
+	if err != nil {
+		return b, privKey, err
+	}
+
+	if err := h.ReleaseHandle(*sess); err != nil {
+		return b, privKey, err
+	}
+
+	pubKey, err := h.GetPublicKey(*sess, pubHandle)
+	if err != nil {
+		return b, privKey, err
+	}
+
+	privHandle, err := h.PrivateKeyHandle(*sess)
+	if err != nil {
+		return b, privKey, err
+	}
+
+	if err := h.ReleaseHandle(*sess); err != nil {
+		return b, privKey, err
+	}
+
+	return crypto.FromECDSAPub(&pubKey), privHandle, nil
 }
 
 func RawTransaction(tx *types.Transaction) ([]byte, error) {

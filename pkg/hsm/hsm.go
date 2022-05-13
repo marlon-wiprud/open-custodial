@@ -19,6 +19,7 @@ type HSM interface {
 	NewSlot(name string) (uint, error)
 	NewSession(slotID uint) (pkcs11.SessionHandle, error)
 	GetSlotID(label string) (uint, error)
+	ReleaseHandle(sess pkcs11.SessionHandle) error
 }
 
 type hsm struct {

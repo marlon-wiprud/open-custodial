@@ -43,11 +43,11 @@ func (h *hsm) EndSession(sess *pkcs11.SessionHandle) error {
 		return err
 	}
 
-	if err := h.ctx.FindObjectsFinal(*sess); err != nil {
-		return err
-	}
-
 	return nil
+}
+
+func (h *hsm) ReleaseHandle(sess pkcs11.SessionHandle) error {
+	return h.ctx.FindObjectsFinal(sess)
 }
 
 func (h *hsm) buildSOPin() string {

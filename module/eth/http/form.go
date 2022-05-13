@@ -10,14 +10,14 @@ import (
 )
 
 type SignTxForm struct {
-	Nonce    uint64
-	To       common.Address
-	Amount   *big.Int
-	GasLimit uint64
-	GasPrice *big.Int
-	Data     []byte
-	ChainID  *big.Int
-	Label    string
+	Nonce    uint64         `json:"nonce"`
+	To       common.Address `json:"to"`
+	Amount   *big.Int       `json:"amount"`
+	GasLimit uint64         `json:"gasLimit"`
+	GasPrice *big.Int       `json:"gasPrice"`
+	Data     []byte         `json:"data"`
+	ChainID  *big.Int       `json:"chaindID"`
+	Label    string         `json:"label"`
 }
 
 func newSignTxForm(c *gin.Context) (f SignTxForm, err error) {
