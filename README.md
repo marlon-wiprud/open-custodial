@@ -16,4 +16,4 @@ A library for doing common Ethereum operations with an HSM interface.
 
 ### `open_custodial/module/eth`
 
-A server to invoke `eth_hsm` functionality via http requests.
+A module to invoke `eth_hsm` functionality via any transport layer.
