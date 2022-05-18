@@ -27,15 +27,15 @@ func (s *ETHSuite) SetupSuite() {
 	s.hsm = h
 }
 
-func (s *ETHSuite) TestCreateAddress() {
-	addr, err := CreateAddress(s.hsm, "test_create_address")
-	s.NoError(err)
+// func (s *ETHSuite) TestCreateAddress() {
+// 	addr, err := CreateAddress(s.hsm, "test_create_address")
+// 	s.NoError(err)
 
-	found, err := GetAddress(s.hsm, "test_create_address")
-	s.NoError(err)
+// 	found, err := GetAddress(s.hsm, "test_create_address")
+// 	s.NoError(err)
 
-	s.Equal(addr.Hex(), found.Hex())
-}
+// 	s.Equal(addr.Hex(), found.Hex())
+// }
 
 func (s *ETHSuite) TestSignTransaction() {
 	_, err := CreateAddress(s.hsm, "test_sign_transaction")

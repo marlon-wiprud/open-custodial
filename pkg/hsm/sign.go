@@ -13,7 +13,6 @@ func (h *hsm) SignECDSA_secp256k1(msg []byte, sess pkcs11.SessionHandle, privKey
 	curve := secp256k1.S256()
 	halfN := new(big.Int).Div(curve.N, big.NewInt(2))
 
-	// arbitrary limit
 	// TODO - flip S value instead of retrying till it works
 	for i := 0; i < 20; i++ {
 
@@ -30,6 +29,7 @@ func (h *hsm) SignECDSA_secp256k1(msg []byte, sess pkcs11.SessionHandle, privKey
 		if s.Cmp(halfN) == -1 {
 			return signature, nil
 		}
+
 	}
 
 	return nil, errors.New("unable to calculate signature within 20 attempts")

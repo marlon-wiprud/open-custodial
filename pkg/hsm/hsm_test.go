@@ -32,6 +32,6 @@ func (s *HSMSuite) SetupSuite() {
 }
 
 func (s *HSMSuite) TestNewSlot() {
-	_, err := s.hsm.NewSlot("tester")
+	_, err := s.hsm.NewSlot("test_new_slot")
 	s.NoError(err)
 }
