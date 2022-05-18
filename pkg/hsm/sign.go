@@ -1,11 +1,9 @@
 package hsm
 
 import (
-	"bytes"
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/miekg/pkcs11"
 )
@@ -53,33 +51,4 @@ func (h *hsm) Sign(sess pkcs11.SessionHandle, privKey pkcs11.ObjectHandle, messa
 	}
 
 	return b, nil
-}
-
-func VerifySignature(message, signature, expectedPublicKey []byte) ([]byte, error) {
-	// attempt recovery ID of 0
-	sig := append(signature, 0)
-
-	err := recoverPublicKey(expectedPublicKey, message, sig)
-	// if there is no error, recovery was successful.
-	if err == nil {
-		return sig, nil
-	}
-
-	// if recovery ID 0 did not work, try 1
-	sig[64] = 1
-	return sig, recoverPublicKey(expectedPublicKey, message, sig)
-}
-
-func recoverPublicKey(expectedPubKey, msg, sig []byte) error {
-
-	recoveredPubKey, err := crypto.Ecrecover(msg, sig)
-	if err != nil {
-		return err
-	}
-
-	if !bytes.Equal(recoveredPubKey, expectedPubKey) {
-		return errors.New("expected public key and recovered public key do not match")
-	}
-
-	return nil
 }

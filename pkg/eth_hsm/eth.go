@@ -2,6 +2,7 @@ package eth_hsm
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math/big"
 	"open_custodial/pkg/hsm"
@@ -102,7 +103,7 @@ func SignTransaction(h hsm.HSM, tx *types.Transaction, label string, chainID *bi
 		return nil, err
 	}
 
-	verifiedSig, err := hsm.VerifySignature(message, signature, pubKeyBytes)
+	verifiedSig, err := VerifySignature(message, signature, pubKeyBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -145,4 +146,30 @@ func RawTransaction(tx *types.Transaction) ([]byte, error) {
 	}
 
 	return b.Bytes(), nil
+}
+
+func VerifySignature(message, signature, expectedPublicKey []byte) ([]byte, error) {
+	sig := append(signature, 0)
+
+	err := recoverPublicKey(expectedPublicKey, message, sig)
+	if err == nil {
+		return sig, nil
+	}
+
+	sig[64] = 1
+	return sig, recoverPublicKey(expectedPublicKey, message, sig)
+}
+
+func recoverPublicKey(expectedPubKey, msg, sig []byte) error {
+
+	recoveredPubKey, err := crypto.Ecrecover(msg, sig)
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(recoveredPubKey, expectedPubKey) {
+		return errors.New("expected public key and recovered public key do not match")
+	}
+
+	return nil
 }
