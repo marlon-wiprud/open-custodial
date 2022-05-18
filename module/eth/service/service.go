@@ -5,7 +5,7 @@ import (
 	"open_custodial/pkg/hsm"
 
 	validator_svc "open_custodial/module/validator/service"
-	"open_custodial/pkg/eth"
+	eth "open_custodial/pkg/eth_hsm"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"

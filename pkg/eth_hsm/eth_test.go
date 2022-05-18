@@ -1,4 +1,4 @@
-package eth
+package eth_hsm
 
 import (
 	"math/big"
@@ -27,20 +27,21 @@ func (s *ETHSuite) SetupSuite() {
 	s.hsm = h
 }
 
-// func (s *ETHSuite) TestGetAddress() {
-// 	addr, err := GetAddress(s.hsm, "tester")
-// 	s.NoError(err)
-// 	fmt.Println("got address:", addr)
-// }
+func (s *ETHSuite) TestCreateAddress() {
+	addr, err := CreateAddress(s.hsm, "test_create_address")
+	s.NoError(err)
 
-// func (s *ETHSuite) TestCreateAddress() {
-// 	addr, err := CreateAddress(s.hsm, "tester")
-// 	s.NoError(err)
-// 	fmt.Println("got address:", addr)
-// }
+	found, err := GetAddress(s.hsm, "test_create_address")
+	s.NoError(err)
+
+	s.Equal(addr.Hex(), found.Hex())
+}
 
 func (s *ETHSuite) TestSignTransaction() {
+	_, err := CreateAddress(s.hsm, "test_sign_transaction")
+	s.NoError(err)
+
 	tx := types.NewTransaction(1, common.HexToAddress("0xE8B5fBaE723E5A4AAc991dDC54c549c1BaEEAb5e"), big.NewInt(1000), 100, big.NewInt(100), nil)
-	_, err := SignTransaction(s.hsm, tx, "tester", big.NewInt(3))
+	_, err = SignTransaction(s.hsm, tx, "test_sign_transaction", big.NewInt(3))
 	s.NoError(err)
 }

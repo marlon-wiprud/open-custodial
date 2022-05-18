@@ -1,4 +1,4 @@
-package eth
+package eth_hsm
 
 import (
 	"bytes"
@@ -22,7 +22,6 @@ func GetSlotAddress(h hsm.HSM, slotID uint) (addr common.Address, err error) {
 
 	pubHandle, err := h.PublicKeyHandle(sess)
 	if err != nil {
-		fmt.Println("get_addr: failed to get public key handle", err)
 		return addr, err
 	}
 
@@ -38,7 +37,6 @@ func GetAddress(h hsm.HSM, name string) (addr common.Address, err error) {
 
 	sess, err := h.NewSlotSession(name)
 	if err != nil {
-		fmt.Println("get_addr: failed to open slot session", err)
 		return addr, err
 	}
 
@@ -46,7 +44,6 @@ func GetAddress(h hsm.HSM, name string) (addr common.Address, err error) {
 
 	pubHandle, err := h.PublicKeyHandle(*sess)
 	if err != nil {
-		fmt.Println("get_addr: failed to get public key handle", err)
 		return addr, err
 	}
 

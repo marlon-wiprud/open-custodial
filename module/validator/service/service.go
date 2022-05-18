@@ -12,11 +12,12 @@ func NewValidatorService() ValidatorService {
 	return &service{}
 }
 
+// TODO - find and invoke validator webhook
 func (s *service) ValidateSign() error {
 	return nil
 }
 
+// TODO - find and invoke validator webhook
 func (s *service) ValidateCreateAddress() error {
-	// return errors.New("not allowed to create address")
 	return nil
 }
